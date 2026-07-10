@@ -131,3 +131,4 @@ class LogoutView(APIView):
     def post(self, request):
         remove_token(request.user)
         return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+

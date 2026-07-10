@@ -7,17 +7,40 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["username", "email", "password", "phone_number"]
+        fields = [
+            "username",
+            "email",
+            "password",
+            "phone_number",
+        ]
+
+    def validate_phone_number(self, value):
+        if not value.isdigit():
+            raise serializers.ValidationError(
+                "Phone number should contain only digits."
+            )
+
+        if len(value) != 10:
+            raise serializers.ValidationError(
+                "Phone number must be exactly 10 digits."
+            )
+
+        return value
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError(
+                "This email is already registered."
+            )
+        return value
 
     def create(self, validated_data):
-        user = User.objects.create_user(
+        return User.objects.create_user(
             username=validated_data["username"],
             email=validated_data["email"],
             password=validated_data["password"],
             phone_number=validated_data["phone_number"],
         )
-        return user
-
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
