@@ -136,9 +136,22 @@ from datetime import timedelta
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "customers.authentication.CustomJWTAuthentication",
+        
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    
+    "DEFAULT_RENDERER_CLASSES": (
+        "rest_framework.renderers.JSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",
+    ),
+
+    "DEFAULT_PARSER_CLASSES": (
+        "rest_framework.parsers.JSONParser",
+        "rest_framework.parsers.FormParser",
+        "rest_framework.parsers.MultiPartParser",
+    ),
 }
+
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
@@ -156,14 +169,17 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
 
     "SERVE_INCLUDE_SCHEMA": False,
-
     "COMPONENT_SPLIT_REQUEST": True,
 
     "SWAGGER_UI_SETTINGS": {
         "persistAuthorization": True,
     },
 
-   
+    "SECURITY": [
+        {
+            "BearerAuth": []
+        }
+    ]
 }
 
 

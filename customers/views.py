@@ -6,14 +6,22 @@ from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema
 
 from .manage_token import generate_token, remove_token, store_token
-from .serializers import LoginSerializer, RegisterSerializer
+from .serializers import (
+    LoginSerializer,
+    LogoutSerializer,
+    ProfileSerializer,
+    RegisterSerializer,
+    UpdateProfileSerializer,
+)
 
 
 @extend_schema(
+    auth=[],
     request=RegisterSerializer,
     responses={201: RegisterSerializer},
 )
 class RegisterView(APIView):
+    serializer_class = RegisterSerializer
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
 
@@ -29,6 +37,7 @@ class RegisterView(APIView):
 
 
 @extend_schema(
+    auth=[],
     request=LoginSerializer,
     responses={
         200: {
@@ -41,6 +50,7 @@ class RegisterView(APIView):
 )
 
 class LoginView(APIView):
+    serializer_class = LoginSerializer
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -61,24 +71,47 @@ class LoginView(APIView):
 
         return Response({"token": token}, status=status.HTTP_200_OK)
 
-@extend_schema(
-    responses={
-        200: {
-            "type": "object",
-            "properties": {
-                "username": {"type": "string"},
-                "email": {"type": "string"}
-            }
-        }
-    }
-)
+
 class ProfileView(APIView):
+
     permission_classes = [IsAuthenticated]
+    serializer_class = UpdateProfileSerializer
+    @extend_schema(
+        responses=ProfileSerializer
+    )
 
     def get(self, request):
+
+        serializer = ProfileSerializer(request.user)
+
         return Response(
-            {"username": request.user.username, "email": request.user.email},
+            serializer.data,
             status=status.HTTP_200_OK,
+        )
+    @extend_schema(
+        request=UpdateProfileSerializer,
+        responses=ProfileSerializer
+    )
+    def patch(self, request):
+
+        serializer = UpdateProfileSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+        )
+
+        if serializer.is_valid():
+
+            serializer.save()
+
+            return Response(
+                ProfileSerializer(request.user).data,
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
 @extend_schema(
@@ -93,6 +126,7 @@ class ProfileView(APIView):
 )
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = LogoutSerializer
 
     def post(self, request):
         remove_token(request.user)

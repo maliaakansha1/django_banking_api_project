@@ -17,6 +17,7 @@ class JWTAuthenticationMiddleware:
         auth_header = request.META.get("HTTP_AUTHORIZATION", "")
         if not auth_header.startswith("Bearer "):
             return JsonResponse({"message": "Missing Token"}, status=401)
+        
 
         token = auth_header.replace("Bearer ", "", 1)
         try:
