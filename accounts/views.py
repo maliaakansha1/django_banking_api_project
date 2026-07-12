@@ -5,7 +5,10 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework.generics import ListAPIView
+from .models import Account
+from .serializers import AccountSerializer
 
 from .serializers import AccountSerializer
 
@@ -13,6 +16,7 @@ from .serializers import AccountSerializer
 from drf_spectacular.utils import (
     OpenApiExample,
     extend_schema,
+    OpenApiTypes,
 )
 
 @extend_schema(
@@ -68,3 +72,41 @@ class CreateAccountView(APIView):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST,
         )
+        
+@extend_schema(
+    tags=["Account Management"],
+    summary="List My Accounts",
+    description="""
+Returns all bank accounts belonging to the authenticated user.
+
+Supports pagination and filtering.
+""",
+    parameters=[
+        OpenApiParameter(
+            name="account_type",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            description="Filter accounts by type (SAVINGS or CURRENT)",
+        ),
+    ],
+    responses=AccountSerializer(many=True),
+)
+class AccountListView(ListAPIView):
+
+    serializer_class = AccountSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+
+        queryset = Account.objects.filter(
+            user=self.request.user
+        ).order_by("-created_at")
+
+        account_type = self.request.query_params.get("account_type")
+
+        if account_type:
+            queryset = queryset.filter(
+                account_type=account_type.upper()
+            )
+
+        return queryset
