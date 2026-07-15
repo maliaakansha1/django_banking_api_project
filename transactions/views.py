@@ -9,11 +9,13 @@ from drf_spectacular.utils import extend_schema
 from .serializers import (
     DepositSerializer,
     WithdrawalSerializer,
+    TransferSerializer,
 )
 
 from .services import (
     deposit_money,
     withdraw_money,
+    transfer_money,
 )
 
 class DepositView(APIView):
@@ -112,6 +114,62 @@ class WithdrawalView(APIView):
                 "account_number": account.account_number,
                 "account_type": account.account_type,
                 "current_balance": account.balance,
+            },
+            status=status.HTTP_200_OK,
+        )
+        
+        
+class TransferView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=TransferSerializer,
+    )
+    def post(self, request):
+
+        serializer = TransferSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        try:
+
+            result = transfer_money(
+                user=request.user,
+                from_account_number=serializer.validated_data[
+                    "from_account_number"
+                ],
+                to_account_number=serializer.validated_data[
+                    "to_account_number"
+                ],
+                amount=serializer.validated_data[
+                    "amount"
+                ],
+            )
+
+        except ValueError as e:
+
+            return Response(
+                {
+                    "message": str(e)
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        sender = result["sender"]
+        receiver = result["receiver"]
+
+        return Response(
+            {
+                "message": "Transfer successful.",
+                "from_account": sender.account_number,
+                "to_account": receiver.account_number,
+                "transferred_amount": serializer.validated_data["amount"],
+                "remaining_balance": sender.balance,
             },
             status=status.HTTP_200_OK,
         )

@@ -89,3 +89,74 @@ def withdraw_money(
         )
 
         return account
+    
+    
+def transfer_money(
+    *,
+    user,
+    from_account_number,
+    to_account_number,
+    amount,
+):
+
+    if amount <= Decimal("0"):
+        raise ValueError(
+            "Amount must be greater than zero."
+        )
+
+    with transaction.atomic():
+
+        sender_account = (
+            Account.objects
+            .select_for_update()
+            .filter(
+                account_number=from_account_number,
+                user=user,
+            )
+            .first()
+        )
+
+        if sender_account is None:
+            raise ValueError(
+                "Sender account not found."
+            )
+
+        receiver_account = (
+            Account.objects
+            .select_for_update()
+            .filter(
+                account_number=to_account_number,
+            )
+            .first()
+        )
+
+        if receiver_account is None:
+            raise ValueError(
+                "Receiver account not found."
+            )
+
+        if from_account_number == to_account_number:
+            raise ValueError(
+                "Source and destination accounts cannot be the same."
+            )
+
+        if sender_account.balance < amount:
+            raise ValueError(
+                "Insufficient funds."
+            )
+
+        sender_account.balance -= amount
+        receiver_account.balance += amount
+
+        sender_account.save(
+            update_fields=["balance"]
+        )
+
+        receiver_account.save(
+            update_fields=["balance"]
+        )
+
+        return {
+            "sender": sender_account,
+            "receiver": receiver_account,
+        }

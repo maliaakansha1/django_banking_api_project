@@ -169,3 +169,155 @@ class TransactionTests(APITestCase):
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
         )
+        
+class TransferTests(APITestCase):
+
+    def setUp(self):
+
+        self.sender = User.objects.create_user(
+            username="sender",
+            email="sender@gmail.com",
+            password="sender123",
+            phone_number="9999999991",
+        )
+
+        self.receiver = User.objects.create_user(
+            username="receiver",
+            email="receiver@gmail.com",
+            password="receiver123",
+            phone_number="9999999992",
+        )
+
+        token = generate_token(self.sender)
+        store_token(self.sender, token)
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+
+        self.sender_account = Account.objects.create(
+            user=self.sender,
+            account_type=Account.SAVINGS,
+            balance=Decimal("5000"),
+        )
+
+        self.receiver_account = Account.objects.create(
+            user=self.receiver,
+            account_type=Account.SAVINGS,
+            balance=Decimal("2000"),
+        )
+
+    def test_successful_transfer(self):
+
+        response = self.client.post(
+            "/api/transactions/transfer/",
+            {
+                "from_account_number": self.sender_account.account_number,
+                "to_account_number": self.receiver_account.account_number,
+                "amount": "1000",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.sender_account.refresh_from_db()
+        self.receiver_account.refresh_from_db()
+
+        self.assertEqual(
+            self.sender_account.balance,
+            Decimal("4000"),
+        )
+
+        self.assertEqual(
+            self.receiver_account.balance,
+            Decimal("3000"),
+        )
+
+    def test_transfer_insufficient_balance(self):
+
+        response = self.client.post(
+            "/api/transactions/transfer/",
+            {
+                "from_account_number": self.sender_account.account_number,
+                "to_account_number": self.receiver_account.account_number,
+                "amount": "10000",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_transfer_invalid_sender(self):
+
+        response = self.client.post(
+            "/api/transactions/transfer/",
+            {
+                "from_account_number": "999999999999",
+                "to_account_number": self.receiver_account.account_number,
+                "amount": "100",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_transfer_invalid_receiver(self):
+
+        response = self.client.post(
+            "/api/transactions/transfer/",
+            {
+                "from_account_number": self.sender_account.account_number,
+                "to_account_number": "999999999999",
+                "amount": "100",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_transfer_same_account(self):
+
+        response = self.client.post(
+            "/api/transactions/transfer/",
+            {
+                "from_account_number": self.sender_account.account_number,
+                "to_account_number": self.sender_account.account_number,
+                "amount": "100",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_transfer_invalid_amount(self):
+
+        response = self.client.post(
+            "/api/transactions/transfer/",
+            {
+                "from_account_number": self.sender_account.account_number,
+                "to_account_number": self.receiver_account.account_number,
+                "amount": "-100",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
