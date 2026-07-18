@@ -43,6 +43,7 @@ INSTALLED_APPS = [
      'customers',
     'accounts',
     'transactions',
+    'beneficiaries',
     'loans',
     'cards',
     'drf_spectacular',
