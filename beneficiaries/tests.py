@@ -7,11 +7,17 @@ from rest_framework.test import APITestCase
 
 from accounts.models import Account
 from beneficiaries.models import Beneficiary
+from beneficiaries.services import activate_beneficiary_if_ready
 from customers.models import User
 from customers.manage_token import (
     generate_token,
     store_token,
 )
+from datetime import timedelta
+
+from django.utils import timezone
+
+
 
 
 class BeneficiaryTests(APITestCase):
@@ -70,6 +76,8 @@ class BeneficiaryTests(APITestCase):
         Beneficiary.objects.create(
             user=self.user,
             beneficiary_account=self.other_account,
+            status=Beneficiary.ACTIVE,
+            cooling_ends_at=timezone.now(),
         )
 
         response = self.client.get(
@@ -91,6 +99,8 @@ class BeneficiaryTests(APITestCase):
         beneficiary = Beneficiary.objects.create(
             user=self.user,
             beneficiary_account=self.other_account,
+            status=Beneficiary.ACTIVE,
+            cooling_ends_at=timezone.now(),
         )
 
         response = self.client.delete(
@@ -105,4 +115,70 @@ class BeneficiaryTests(APITestCase):
         self.assertEqual(
             Beneficiary.objects.count(),
             0,
+        )
+
+    def test_new_beneficiary_is_pending(self):
+
+        response = self.client.post(
+            "/api/beneficiaries/",
+            {
+                "account_number": self.other_account.account_number,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        beneficiary = Beneficiary.objects.first()
+
+        self.assertEqual(
+            beneficiary.status,
+            Beneficiary.PENDING,
+        )
+
+        self.assertIsNotNone(
+            beneficiary.cooling_ends_at
+        )
+
+    def test_beneficiary_auto_activates(self):
+
+        beneficiary = Beneficiary.objects.create(
+            user=self.user,
+            beneficiary_account=self.other_account,
+            status=Beneficiary.PENDING,
+            cooling_ends_at=timezone.now() - timedelta(minutes=1),
+        )
+
+        activate_beneficiary_if_ready(
+            beneficiary
+        )
+
+        beneficiary.refresh_from_db()
+
+        self.assertEqual(
+            beneficiary.status,
+            Beneficiary.ACTIVE,
+        )
+
+    def test_beneficiary_remains_pending(self):
+
+        beneficiary = Beneficiary.objects.create(
+            user=self.user,
+            beneficiary_account=self.other_account,
+            status=Beneficiary.PENDING,
+            cooling_ends_at=timezone.now() + timedelta(minutes=5),
+        )
+
+        activate_beneficiary_if_ready(
+            beneficiary
+        )
+
+        beneficiary.refresh_from_db()
+
+        self.assertEqual(
+            beneficiary.status,
+            Beneficiary.PENDING,
         )

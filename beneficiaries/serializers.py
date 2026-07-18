@@ -31,4 +31,7 @@ class BeneficiaryListSerializer(serializers.ModelSerializer):
             "account_number",
             "account_type",
             "account_holder",
+            "status",
+            "cooling_ends_at",
         ]
+        
