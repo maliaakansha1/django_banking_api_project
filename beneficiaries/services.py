@@ -2,7 +2,9 @@ from django.db import transaction
 
 from accounts.models import Account
 from .models import Beneficiary
+from datetime import timedelta
 
+from django.utils import timezone
 
 def add_beneficiary(
     *,
@@ -40,9 +42,13 @@ def add_beneficiary(
             )
 
         beneficiary = Beneficiary.objects.create(
-            user=user,
-            beneficiary_account=account,
-        )
+                user=user,
+                beneficiary_account=account,
+                status=Beneficiary.PENDING,
+                cooling_ends_at=(
+                timezone.now() + timedelta(minutes=2)
+    ),
+)
 
         return beneficiary
 
@@ -52,7 +58,7 @@ def list_beneficiaries(
     user,
 ):
 
-    return (
+    beneficiaries = (
         Beneficiary.objects
         .filter(
             user=user,
@@ -63,6 +69,13 @@ def list_beneficiaries(
         )
         .order_by("id")
     )
+
+    for beneficiary in beneficiaries:
+        activate_beneficiary_if_ready(
+            beneficiary
+        )
+
+    return beneficiaries
 
 from django.shortcuts import get_object_or_404
 
@@ -80,3 +93,24 @@ def delete_beneficiary(
     )
 
     beneficiary.delete()
+    
+    
+from django.utils import timezone
+
+
+def activate_beneficiary_if_ready(
+    beneficiary,
+):
+
+    if (
+        beneficiary.status == Beneficiary.PENDING
+        and timezone.now() >= beneficiary.cooling_ends_at
+    ):
+
+        beneficiary.status = Beneficiary.ACTIVE
+
+        beneficiary.save(
+            update_fields=["status"]
+        )
+
+    return beneficiary

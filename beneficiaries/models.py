@@ -8,6 +8,13 @@ from accounts.models import Account
 
 
 class Beneficiary(models.Model):
+    
+    PENDING = "PENDING"
+    ACTIVE = "ACTIVE"
+    STATUS_CHOICES = [
+        (PENDING, "Pending"),
+        (ACTIVE, "Active"),
+    ]
 
     user = models.ForeignKey(
         User,
@@ -20,11 +27,16 @@ class Beneficiary(models.Model):
         on_delete=models.CASCADE,
         related_name="saved_by",
     )
-
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default=PENDING,
+    )
     created_at = models.DateTimeField(
         auto_now_add=True,
     )
-
+    cooling_ends_at = models.DateTimeField()
+    
     class Meta:
 
         unique_together = (
