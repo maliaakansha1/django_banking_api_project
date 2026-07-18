@@ -7,6 +7,9 @@ from beneficiaries.models import Beneficiary
 from beneficiaries.services import (
     activate_beneficiary_if_ready,
 )
+from uuid import uuid4
+
+from .models import Transaction
 
 def deposit_money(
     *,
@@ -45,7 +48,13 @@ def deposit_money(
         account.save(
             update_fields=["balance"]
         )
-
+        create_transaction(
+             account=account,
+             transaction_type=Transaction.DEPOSIT,
+             amount=amount,
+             balance_after_transaction=account.balance,
+             remarks="Cash Deposit",
+)
         return account
     
     
@@ -90,6 +99,14 @@ def withdraw_money(
         account.save(
             update_fields=["balance"]
         )
+        create_transaction(
+              account=account,
+              transaction_type=Transaction.WITHDRAW,
+              amount=amount,
+              balance_after_transaction=account.balance,
+              remarks="Cash Withdrawal",
+)
+
 
         return account
     
@@ -180,8 +197,46 @@ def transfer_money(
         receiver_account.save(
             update_fields=["balance"]
         )
+        create_transaction(
+               account=sender_account,
+               transaction_type=Transaction.TRANSFER_OUT,
+               amount=amount,
+               balance_after_transaction=sender_account.balance,
+               remarks=f"Transfer to {receiver_account.account_number}",
+)
+
+        create_transaction(
+               account=receiver_account,
+               transaction_type=Transaction.TRANSFER_IN,
+               amount=amount,
+               balance_after_transaction=receiver_account.balance,
+               remarks=f"Transfer from {sender_account.account_number}",
+)
 
         return {
             "sender": sender_account,
             "receiver": receiver_account,
         }
+        
+# for uc9
+def create_transaction(
+    *,
+    account,
+    transaction_type,
+    amount,
+    balance_after_transaction,
+    remarks="",
+):
+
+    reference_number = (
+        f"TXN-{uuid4().hex[:12].upper()}"
+    )
+
+    return Transaction.objects.create(
+        reference_number=reference_number,
+        account=account,
+        transaction_type=transaction_type,
+        amount=amount,
+        balance_after_transaction=balance_after_transaction,
+        remarks=remarks,
+    )
