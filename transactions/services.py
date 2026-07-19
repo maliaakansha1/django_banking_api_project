@@ -240,3 +240,52 @@ def create_transaction(
         balance_after_transaction=balance_after_transaction,
         remarks=remarks,
     )
+    
+from .models import Transaction
+
+
+def list_transactions(
+    *,
+    user,
+    account_number=None,
+    transaction_type=None,
+    from_date=None,
+    to_date=None,
+    reference_number=None,
+):
+
+    transactions = (
+        Transaction.objects
+        .filter(
+            account__user=user,
+        )
+        .select_related("account")
+        .order_by("-created_at")
+    )
+
+    if account_number:
+        transactions = transactions.filter(
+            account__account_number=account_number
+        )
+
+    if transaction_type:
+        transactions = transactions.filter(
+            transaction_type=transaction_type
+        )
+
+    if reference_number:
+        transactions = transactions.filter(
+            reference_number=reference_number
+        )
+
+    if from_date:
+        transactions = transactions.filter(
+            created_at__date__gte=from_date
+        )
+
+    if to_date:
+        transactions = transactions.filter(
+            created_at__date__lte=to_date
+        )
+
+    return transactions

@@ -10,7 +10,11 @@ from customers.models import User
 from customers.manage_token import generate_token, store_token
 
 from accounts.models import Account
+from datetime import timedelta
+from django.utils import timezone
 
+from beneficiaries.models import Beneficiary
+from transactions.models import Transaction
 
 class TransactionTests(APITestCase):
 

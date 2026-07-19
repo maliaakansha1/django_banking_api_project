@@ -42,3 +42,26 @@ class TransferSerializer(serializers.Serializer):
         decimal_places=2,
         help_text="Enter the transfer amount.",
     )
+
+from .models import Transaction
+
+
+class TransactionHistorySerializer(serializers.ModelSerializer):
+
+    account_number = serializers.CharField(
+        source="account.account_number",
+        read_only=True,
+    )
+
+    class Meta:
+        model = Transaction
+
+        fields = (
+            "reference_number",
+            "account_number",
+            "transaction_type",
+            "amount",
+            "balance_after_transaction",
+            "remarks",
+            "created_at",
+        )
