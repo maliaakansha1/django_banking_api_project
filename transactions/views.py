@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import DepositSerializer
+from .serializers import DepositSerializer, TransactionHistorySerializer
 from .services import deposit_money
 from drf_spectacular.utils import extend_schema
 from .serializers import (
@@ -16,6 +16,13 @@ from .services import (
     deposit_money,
     withdraw_money,
     transfer_money,
+)
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    OpenApiResponse,
+    OpenApiTypes,
+    extend_schema,
 )
 
 class DepositView(APIView):
@@ -173,3 +180,122 @@ class TransferView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+        
+from .serializers import TransactionHistorySerializer
+from .services import list_transactions
+
+@extend_schema(
+    tags=["Transaction Management"],
+    summary="View Transaction History",
+    description=(
+        "Returns the transaction history of the authenticated user's bank accounts.\n\n"
+    "If no query parameters are supplied, all transactions are returned.\n\n"
+    "All query parameters are optional and can be combined to filter the results."
+    ),
+    parameters=[
+        OpenApiParameter(
+            name="account_number",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            required=False,
+            description="Filter transactions by account number.",
+            examples=[
+                OpenApiExample(
+                    "Savings Account",
+                    value="100000001",
+                )
+            ],
+        ),
+        OpenApiParameter(
+            name="transaction_type",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            required=False,
+            description=(
+                "Filter by transaction type. "
+                "Allowed values: DEPOSIT, WITHDRAW, "
+                "TRANSFER_IN, TRANSFER_OUT."
+            ),
+            examples=[
+                OpenApiExample(
+                    "Deposit",
+                    value="DEPOSIT",
+                )
+            ],
+        ),
+        OpenApiParameter(
+            name="from_date",
+            type=OpenApiTypes.DATE,
+            location=OpenApiParameter.QUERY,
+            required=False,
+            description="Start date (YYYY-MM-DD).",
+            examples=[
+                OpenApiExample(
+                    "From Date",
+                    value="2026-07-01",
+                )
+            ],
+        ),
+        OpenApiParameter(
+            name="to_date",
+            type=OpenApiTypes.DATE,
+            location=OpenApiParameter.QUERY,
+            required=False,
+            description="End date (YYYY-MM-DD).",
+            examples=[
+                OpenApiExample(
+                    "To Date",
+                    value="2026-07-31",
+                )
+            ],
+        ),
+        OpenApiParameter(
+            name="reference_number",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            required=False,
+            description="Search using transaction reference number.",
+            examples=[
+                OpenApiExample(
+                    "Reference Number",
+                    value="TXN-AB12CD34EF56",
+                )
+            ],
+        ),
+    ],
+    responses={
+         200: TransactionHistorySerializer(many=True),
+            
+        
+    },
+)
+
+class TransactionHistoryView(APIView):
+
+    def get(self, request):
+
+        transactions = list_transactions(
+            user=request.user,
+            account_number=request.query_params.get(
+                "account_number"
+            ),
+            transaction_type=request.query_params.get(
+                "transaction_type"
+            ),
+            from_date=request.query_params.get(
+                "from_date"
+            ),
+            to_date=request.query_params.get(
+                "to_date"
+            ),
+            reference_number=request.query_params.get(
+                "reference_number"
+            ),
+        )
+
+        serializer = TransactionHistorySerializer(
+            transactions,
+            many=True,
+        )
+
+        return Response(serializer.data)
