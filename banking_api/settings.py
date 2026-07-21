@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'cards',
     'statements',
     'drf_spectacular',
+    'django_celery_beat',
     'rest_framework_simplejwt.token_blacklist',
 ]
 
@@ -210,3 +211,7 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 
 CELERY_TIMEZONE = "Asia/Kolkata"
+
+CELERY_BEAT_SCHEDULER = (
+    "django_celery_beat.schedulers:DatabaseScheduler"
+)
