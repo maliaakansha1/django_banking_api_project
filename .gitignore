@@ -23,3 +23,9 @@ Thumbs.db
 
 # Python Environment
 .python-version
+
+# Media files
+media/
+
+# Generated bank statements
+statements/statements/
