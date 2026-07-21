@@ -50,3 +50,14 @@ def generate_statement(
     )
 
     statement_request.save()
+    
+    # ---------------- UC12 ---------------- #
+@shared_task
+def scheduled_test_task():
+
+    print("=" * 50)
+    print("CELERY BEAT IS WORKING")
+    print(f"Executed at: {timezone.now()}")
+    print("=" * 50)
+
+    return "SUCCESS"
