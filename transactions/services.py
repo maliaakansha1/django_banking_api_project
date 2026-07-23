@@ -10,6 +10,9 @@ from beneficiaries.services import (
 from uuid import uuid4
 
 from .models import Transaction
+from notifications.tasks import (
+    send_email_task,
+)
 
 def deposit_money(
     *,
@@ -46,17 +49,30 @@ def deposit_money(
         account.balance += amount
 
         account.save(
-            update_fields=["balance"]
+            update_fields=["balance"],
         )
+
         create_transaction(
-             account=account,
-             transaction_type=Transaction.DEPOSIT,
-             amount=amount,
-             balance_after_transaction=account.balance,
-             remarks="Cash Deposit",
-)
+            account=account,
+            transaction_type=Transaction.DEPOSIT,
+            amount=amount,
+            balance_after_transaction=account.balance,
+            remarks="Cash Deposit",
+        )
+
+        send_email_task.delay(
+            subject="Deposit Successful",
+            receiver_email="aakanshamali01@gmail.com",
+            body=(
+                f"Dear {account.user.username},\n\n"
+                f"₹{amount} has been credited successfully to "
+                f"Account {account.account_number}.\n\n"
+                f"Available Balance: ₹{account.balance}\n\n"
+                "Thank you for banking with us."
+            ),
+        )
+
         return account
-    
     
     
     
@@ -105,8 +121,19 @@ def withdraw_money(
               amount=amount,
               balance_after_transaction=account.balance,
               remarks="Cash Withdrawal",
+              
 )
-
+        send_email_task.delay(
+              subject="Withdrawal Successful",
+               receiver_email="aakanshamali01@gmail.com",
+               body=(
+               f"Dear {account.user.username},\n\n"
+               f"₹{amount} has been debited from "
+               f"Account {account.account_number}.\n\n"
+               f"Available Balance: ₹{account.balance}\n\n"
+               "Thank you for banking with us."
+    ),
+)
 
         return account
     
@@ -203,6 +230,17 @@ def transfer_money(
                amount=amount,
                balance_after_transaction=sender_account.balance,
                remarks=f"Transfer to {receiver_account.account_number}",
+)   
+        send_email_task.delay(
+            subject="Money Transfer Successful",
+            receiver_email="aakanshamali01@gmail.com",
+            body=(
+                f"Dear {sender_account.user.username},\n\n"
+                f"₹{amount} has been transferred successfully "
+                f"from Account {sender_account.account_number}.\n\n"
+                f"Remaining Balance: ₹{sender_account.balance}\n\n"
+                "Thank you for banking with us."
+    ),
 )
 
         create_transaction(
@@ -211,6 +249,17 @@ def transfer_money(
                amount=amount,
                balance_after_transaction=receiver_account.balance,
                remarks=f"Transfer from {sender_account.account_number}",
+)
+        send_email_task.delay(
+               subject="Money Received",
+               receiver_email="aakanshamali01@gmail.com",
+                body=(
+                  f"Dear {receiver_account.user.username},\n\n"
+                   f"₹{amount} has been credited successfully "
+                   f"to Account {receiver_account.account_number}.\n\n"
+                   f"Available Balance: ₹{receiver_account.balance}\n\n"
+                    "Thank you for banking with us."
+    ),
 )
 
         return {
