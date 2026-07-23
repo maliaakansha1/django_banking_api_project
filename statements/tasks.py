@@ -6,7 +6,7 @@ from django.core.files import File
 from .models import StatementRequest
 from .pdf_generator import generate_statement_pdf
 
-
+from notifications.tasks import send_email_task
 @shared_task
 def generate_statement(
     statement_request_id,
@@ -50,6 +50,17 @@ def generate_statement(
     )
 
     statement_request.save()
+    
+    send_email_task.delay(
+       subject="Bank Statement Generated",
+        receiver_email="aakanshamali01@gmail.com",
+        body=(
+             f"Dear {statement_request.user.username},\n\n"
+              "Your account statement has been generated successfully.\n\n"
+              "You can now download it from the banking application.\n\n"
+              "Thank you for banking with us."
+    ),
+)
     
     # ---------------- UC12 ---------------- #
 @shared_task

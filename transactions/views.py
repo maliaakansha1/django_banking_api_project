@@ -29,9 +29,18 @@ class DepositView(APIView):
 
     permission_classes = [IsAuthenticated]
     @extend_schema(
-    request=DepositSerializer,
-    responses={
-        200: {
+        tags=["Transaction Management"],
+        summary="Deposit Money",
+        description=(
+        "Deposits money into the authenticated user's account.\n\n"
+        "After a successful deposit:\n"
+        "- Account balance is updated.\n"
+        "- Transaction history is created.\n"
+        "- An email notification is sent asynchronously using Celery."
+    ),
+        request=DepositSerializer,
+        responses={
+           200: {
             "type": "object",
             "properties": {
                 "message": {"type": "string"},
@@ -82,8 +91,14 @@ class WithdrawalView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        request=WithdrawalSerializer,
-    )
+    tags=["Transactions"],
+    summary="Withdraw Money",
+    description=(
+        "Withdraws money from the authenticated user's account. "
+        "After a successful withdrawal, an email notification is "
+        "sent asynchronously using Celery."
+    ),
+)
     def post(self, request):
 
         serializer = WithdrawalSerializer(
@@ -131,8 +146,26 @@ class TransferView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        request=TransferSerializer,
-    )
+    tags=["Transaction Management"],
+    summary="Transfer Money",
+    description=(
+        "Transfers funds between two bank accounts.\n\n"
+        "After a successful transfer:\n"
+        "- Sender balance is updated.\n"
+        "- Receiver balance is updated.\n"
+        "- Transaction records are created.\n"
+        "- Email notifications are sent asynchronously using Celery."
+    ),
+    request=TransferSerializer,
+    responses={
+        200: OpenApiResponse(
+            description="Transfer completed successfully."
+        ),
+        400: OpenApiResponse(
+            description="Transfer failed."
+        ),
+    },
+)
     def post(self, request):
 
         serializer = TransferSerializer(

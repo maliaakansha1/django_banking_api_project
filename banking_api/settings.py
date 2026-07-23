@@ -12,11 +12,16 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+import environ
 import redis
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+env = environ.Env()
 
+environ.Env.read_env(
+    os.path.join(BASE_DIR, ".env")
+)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -47,6 +52,7 @@ INSTALLED_APPS = [
     'loans',
     'cards',
     'statements',
+    'notifications',
     'drf_spectacular',
     'django_celery_beat',
     'rest_framework_simplejwt.token_blacklist',
@@ -215,3 +221,13 @@ CELERY_TIMEZONE = "Asia/Kolkata"
 CELERY_BEAT_SCHEDULER = (
     "django_celery_beat.schedulers:DatabaseScheduler"
 )
+
+
+EMAIL_HOST = env("EMAIL_HOST")
+EMAIL_PORT = env.int("EMAIL_PORT")
+
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL")
+TEST_EMAIL = "aakanshamali01@gmail.com"
