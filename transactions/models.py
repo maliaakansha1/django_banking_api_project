@@ -12,12 +12,14 @@ class Transaction(models.Model):
     WITHDRAW = "WITHDRAW"
     TRANSFER_IN = "TRANSFER_IN"
     TRANSFER_OUT = "TRANSFER_OUT"
+    INTEREST = "INTEREST"
 
     TRANSACTION_TYPES = [
         (DEPOSIT, "Deposit"),
         (WITHDRAW, "Withdraw"),
         (TRANSFER_IN, "Transfer In"),
         (TRANSFER_OUT, "Transfer Out"),
+        (INTEREST, "Monthly Interest"),
     ]
 
     reference_number = models.CharField(
