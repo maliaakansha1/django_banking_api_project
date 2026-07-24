@@ -38,4 +38,8 @@ urlpatterns = [
        "api/statements/",
        include("statements.urls"),
 ),
+    path(
+     "api/loans/",
+      include("loans.urls"),
+),
 ]
