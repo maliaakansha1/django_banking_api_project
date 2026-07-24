@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.db import transaction
-
+from django.utils import timezone
 from accounts.models import Account
 from beneficiaries.models import Beneficiary
 from beneficiaries.services import (
@@ -13,6 +13,7 @@ from .models import Transaction
 from notifications.tasks import (
     send_email_task,
 )
+
 
 def deposit_money(
     *,
@@ -338,3 +339,69 @@ def list_transactions(
         )
 
     return transactions
+
+
+
+def credit_monthly_interest():
+    """
+    Credit monthly interest to all eligible savings accounts.
+    """
+
+    accounts = Account.objects.filter(
+        account_type=Account.SAVINGS,
+    )
+
+    for account in accounts:
+        current_date = timezone.now()
+
+        already_credited = (
+           Transaction.objects.filter(
+               account=account,
+               transaction_type=Transaction.INTEREST,
+               created_at__year=current_date.year,
+               created_at__month=current_date.month,
+           ).exists()
+)
+
+        if already_credited:
+          print(
+             f"Interest already credited for {account.account_number}"
+    )
+          continue
+
+        annual_interest_rate = Decimal("4.0")
+
+        monthly_interest = (
+            account.balance
+            * annual_interest_rate
+            / Decimal("100")
+            / Decimal("12")
+        )
+
+        monthly_interest = monthly_interest.quantize(
+            Decimal("0.01")
+        )
+        account.balance += monthly_interest
+
+        account.save(
+              update_fields=["balance"],
+        )
+        create_transaction(
+               account=account,
+               transaction_type=Transaction.INTEREST,
+               amount=monthly_interest,
+               balance_after_transaction=account.balance,
+               remarks="Monthly Interest Credit",
+)
+
+        print(
+            f"Account: {account.account_number}"
+        )
+
+        print(
+            f"Current Balance: {account.balance}"
+        )
+
+        print(
+            f"Interest: {monthly_interest}"
+        )
