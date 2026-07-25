@@ -73,3 +73,67 @@ class Loan(models.Model):
             f"{self.loan_type} - "
             f"{self.status}"
         )
+
+from decimal import Decimal
+
+class EMI(models.Model):
+
+    PENDING = "PENDING"
+    PAID = "PAID"
+
+    EMI_STATUS = [
+        (PENDING, "Pending"),
+        (PAID, "Paid"),
+    ]
+
+    loan = models.ForeignKey(
+        Loan,
+        on_delete=models.CASCADE,
+        related_name="emis",
+    )
+
+    emi_number = models.PositiveIntegerField()
+
+    due_date = models.DateField()
+
+    emi_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    principal_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    interest_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    remaining_balance = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=EMI_STATUS,
+        default=PENDING,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+
+        ordering = [
+            "emi_number",
+        ]
+
+    def __str__(self):
+
+        return (
+            f"Loan {self.loan.id} - EMI {self.emi_number}"
+        )
