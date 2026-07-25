@@ -46,17 +46,22 @@ def update_loan_status(
         update_fields=["status"],
     )
     if loan.status == Loan.APPROVED:
+        from .tasks import generate_emi_schedule_task
 
-       subject = "Loan Approved"
+        generate_emi_schedule_task.delay(
+           loan.id,
+    )
 
-       body = (
-        f"Dear {loan.customer.username},\n\n"
-        f"Congratulations!\n\n"
-        f"Your {loan.loan_type} loan application "
-        f"for ₹{loan.loan_amount} has been approved.\n\n"
-        f"Interest Rate: {loan.interest_rate}%\n"
-        f"Tenure: {loan.tenure_months} months\n\n"
-        "Thank you for banking with us."
+        subject = "Loan Approved"
+
+        body = (
+         f"Dear {loan.customer.username},\n\n"
+         f"Congratulations!\n\n"
+         f"Your {loan.loan_type} loan application "
+         f"for ₹{loan.loan_amount} has been approved.\n\n"
+         f"Interest Rate: {loan.interest_rate}%\n"
+         f"Tenure: {loan.tenure_months} months\n\n"
+         "Thank you for banking with us."
     )
 
     else:
