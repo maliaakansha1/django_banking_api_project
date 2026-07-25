@@ -13,6 +13,7 @@ class Transaction(models.Model):
     TRANSFER_IN = "TRANSFER_IN"
     TRANSFER_OUT = "TRANSFER_OUT"
     INTEREST = "INTEREST"
+    EMI_PAYMENT = "EMI_PAYMENT"
 
     TRANSACTION_TYPES = [
         (DEPOSIT, "Deposit"),
@@ -20,6 +21,7 @@ class Transaction(models.Model):
         (TRANSFER_IN, "Transfer In"),
         (TRANSFER_OUT, "Transfer Out"),
         (INTEREST, "Monthly Interest"),
+        (EMI_PAYMENT, "EMI Payment"),
     ]
 
     reference_number = models.CharField(
