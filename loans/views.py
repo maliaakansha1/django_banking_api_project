@@ -14,7 +14,8 @@ from rest_framework.permissions import IsAdminUser
 
 from .models import Loan
 from .services import update_loan_status,list_loans
-
+from .services import foreclose_loan
+from .serializers import LoanForeclosureSerializer
 
 @extend_schema(
     tags=["Loans"],
@@ -175,3 +176,57 @@ class LoanApprovalView(APIView):
         return Response(
             LoanApplicationSerializer(loan).data
         )
+
+
+
+
+@extend_schema(
+    request=LoanForeclosureSerializer,
+    responses={
+        200: OpenApiExample(
+            "Success",
+            value={
+                "message": "Loan foreclosed successfully."
+            },
+        ),
+    },
+)
+class LoanForeclosureView(APIView):
+
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
+    def post(
+        self,
+        request,
+        loan_id,
+    ):
+
+        loan = get_object_or_404(
+            Loan,
+            id=loan_id,
+            customer=request.user,
+        )
+
+        try:
+
+            foreclose_loan(
+                loan=loan,
+            )
+
+            return Response(
+                {
+                    "message": "Loan foreclosed successfully."
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except ValueError as e:
+
+            return Response(
+                {
+                    "error": str(e),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )

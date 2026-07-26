@@ -206,3 +206,102 @@ def process_due_emi():
     return (
         f"{due_emis.count()} due EMI(s) processed."
     )
+
+from .models import EMI
+def foreclose_loan(
+    *,
+    loan,
+):
+    """
+    Foreclose an approved loan.
+    """
+
+    if loan.status != Loan.APPROVED:
+        raise ValueError(
+            "Only approved loans can be foreclosed."
+        )
+
+    pending_emi = (
+        EMI.objects
+        .filter(
+            loan=loan,
+            status=EMI.PENDING,
+        )
+        .order_by("emi_number")
+        .first()
+    )
+
+    if pending_emi is None:
+        raise ValueError(
+            "Loan is already fully paid."
+        )
+
+    foreclosure_amount = pending_emi.remaining_balance
+
+    with transaction.atomic():
+
+        account = (
+            Account.objects
+            .select_for_update()
+            .filter(
+                user=loan.customer,
+            )
+            .first()
+        )
+
+        if account is None:
+            raise ValueError(
+                "Customer account not found."
+            )
+
+        if account.balance < foreclosure_amount:
+            raise ValueError(
+                "Insufficient balance for loan foreclosure."
+            )
+
+        # Deduct amount
+        account.balance -= foreclosure_amount
+
+        account.save(
+            update_fields=["balance"],
+        )
+
+        # Create transaction
+        create_transaction(
+               account=account,
+              transaction_type=Transaction.LOAN_FORECLOSURE,
+               amount=foreclosure_amount,
+                balance_after_transaction=account.balance,
+                remarks=f"Loan Foreclosure - Loan #{loan.id}",
+)
+
+        # Close loan
+        loan.status = Loan.CLOSED
+
+        loan.save(
+            update_fields=["status"],
+        )
+
+        # Cancel remaining EMIs
+        EMI.objects.filter(
+            loan=loan,
+            status=EMI.PENDING,
+        ).update(
+            status=EMI.CANCELLED,
+        )
+
+    # Send email asynchronously
+    send_email_task.delay(
+        subject="Loan Foreclosed Successfully",
+        receiver_email="aakanshamali01@gmail.com",
+        body=(
+            f"Dear {loan.customer.username},\n\n"
+            "Your loan has been successfully foreclosed.\n\n"
+            f"Loan Type : {loan.loan_type}\n"
+            f"Foreclosure Amount Paid: ₹{foreclosure_amount}\n\n"
+            "All remaining EMIs have been cancelled.\n\n"
+            "Thank you for banking with us."
+        ),
+    )
+
+    return loan

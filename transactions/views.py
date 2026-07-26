@@ -98,6 +98,11 @@ class WithdrawalView(APIView):
         "After a successful withdrawal, an email notification is "
         "sent asynchronously using Celery."
     ),
+    request=WithdrawalSerializer,
+    responses={
+        200: OpenApiResponse(description="Withdrawal successful."),
+        400: OpenApiResponse(description="Invalid request."),
+    },
 )
     def post(self, request):
 

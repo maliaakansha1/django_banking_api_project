@@ -60,3 +60,10 @@ class LoanApplicationSerializer(
             )
 
         return value
+
+class LoanForeclosureSerializer(serializers.Serializer):
+    """
+    Empty serializer used for Swagger documentation.
+    """
+
+    pass
