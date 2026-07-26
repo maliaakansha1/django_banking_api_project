@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views import LoanApplicationView, LoanApprovalView
-from .views import LoanForeclosureView
+from .views import LoanForeclosureView,LoanHistoryView
 
 urlpatterns = [
     path(
@@ -19,4 +19,10 @@ urlpatterns = [
               LoanForeclosureView.as_view(),
             name="loan-foreclosure",
 ),
+    path(
+        "loans/<int:loan_id>/history/",
+         LoanHistoryView.as_view(),
+         name="loan-history",
+),
+    
 ]

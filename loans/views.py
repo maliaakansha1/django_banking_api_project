@@ -16,6 +16,7 @@ from .models import Loan
 from .services import update_loan_status,list_loans
 from .services import foreclose_loan
 from .serializers import LoanForeclosureSerializer
+from .serializers import LoanHistorySerializer
 
 @extend_schema(
     tags=["Loans"],
@@ -230,3 +231,48 @@ class LoanForeclosureView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+            
+            
+            
+            
+class LoanHistoryView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["Loans"],
+        summary="Loan History",
+        description=(
+            "Displays the authenticated customer's loan details "
+            "along with the complete EMI schedule and remaining balance."
+        ),
+        responses={
+            200: LoanHistorySerializer,
+        },
+    )
+    def get(self, request, loan_id):
+
+        try:
+
+            loan = Loan.objects.get(
+                id=loan_id,
+                customer=request.user,
+            )
+
+        except Loan.DoesNotExist:
+
+            return Response(
+                {
+                    "message": "Loan not found."
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = LoanHistorySerializer(
+            loan
+        )
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK,
+        )
