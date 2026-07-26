@@ -14,6 +14,7 @@ class Transaction(models.Model):
     TRANSFER_OUT = "TRANSFER_OUT"
     INTEREST = "INTEREST"
     EMI_PAYMENT = "EMI_PAYMENT"
+    LOAN_FORECLOSURE = "LOAN_FORECLOSURE"
 
     TRANSACTION_TYPES = [
         (DEPOSIT, "Deposit"),
@@ -22,6 +23,7 @@ class Transaction(models.Model):
         (TRANSFER_OUT, "Transfer Out"),
         (INTEREST, "Monthly Interest"),
         (EMI_PAYMENT, "EMI Payment"),
+        (LOAN_FORECLOSURE, "Loan Foreclosure"),
     ]
 
     reference_number = models.CharField(

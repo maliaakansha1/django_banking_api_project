@@ -22,11 +22,13 @@ class Loan(models.Model):
     PENDING = "PENDING"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
+    CLOSED = "CLOSED"
 
     LOAN_STATUS = [
         (PENDING, "Pending"),
         (APPROVED, "Approved"),
         (REJECTED, "Rejected"),
+        (CLOSED, "Closed"),
     ]
 
     customer = models.ForeignKey(
@@ -81,11 +83,13 @@ class EMI(models.Model):
     PENDING = "PENDING"
     PAID = "PAID"
     FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
     EMI_STATUS = [
         (PENDING, "Pending"),
         (PAID, "Paid"),
         (FAILED,"Failed"),
+        (CANCELLED, "Cancelled"),
     ]
 
     loan = models.ForeignKey(
