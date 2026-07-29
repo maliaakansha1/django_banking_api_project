@@ -31,6 +31,7 @@ class CardSerializer(serializers.ModelSerializer):
             "account_number",
             "account_type",
             "status",
+            "transaction_limit",
         ]
 
     def get_masked_card_number(
@@ -57,4 +58,18 @@ class IssueCardSerializer(serializers.Serializer):
     account_number = serializers.CharField(
         max_length=20,
         help_text="Enter your account number.",
+    )
+    
+class UpdateTransactionLimitSerializer(
+    serializers.Serializer,
+):
+
+    transaction_limit = serializers.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        min_value=1,
+        help_text=(
+            "Maximum amount allowed "
+            "per card transaction."
+        ),
     )
