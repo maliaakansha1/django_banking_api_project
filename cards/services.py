@@ -3,7 +3,7 @@ import random
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
-
+from django.db import transaction
 from .models import Card
 
 def generate_card_number():
@@ -64,5 +64,44 @@ def issue_card(
         expiry_date=generate_expiry_date(),
 
     )
+
+    return card
+
+def toggle_card_status(
+    *,
+    card,
+):
+
+    with transaction.atomic():
+
+        if card.status == Card.ACTIVE:
+
+            card.status = Card.BLOCKED
+
+        else:
+
+            card.status = Card.ACTIVE
+
+        card.save(
+            update_fields=["status"],
+        )
+
+    return card
+
+def update_transaction_limit(
+    *,
+    card,
+    transaction_limit,
+):
+
+    with transaction.atomic():
+
+        card.transaction_limit = transaction_limit
+
+        card.save(
+            update_fields=[
+                "transaction_limit",
+            ],
+        )
 
     return card

@@ -53,6 +53,11 @@ class Card(models.Model):
         choices=CARD_STATUS,
         default=ACTIVE,
     )
+    transaction_limit = models.DecimalField(
+       max_digits=12,
+       decimal_places=2,
+       default=50000.00,
+)
 
     created_at = models.DateTimeField(
         auto_now_add=True,
