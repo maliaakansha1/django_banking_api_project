@@ -6,6 +6,11 @@ from dateutil.relativedelta import relativedelta
 from django.db import transaction
 from .models import Card
 
+from accounts.models import Account
+from transactions.services import create_transaction
+from transactions.models import Transaction
+from notifications.tasks import send_email_task
+
 def generate_card_number():
 
     while True:
@@ -105,3 +110,91 @@ def update_transaction_limit(
         )
 
     return card
+
+
+def simulate_card_transaction(
+    *,
+    card_number,
+    cvv,
+    expiry_date,
+    amount,
+):
+
+    try:
+
+        card = Card.objects.select_related(
+            "account",
+            "account__user",
+        ).get(
+            card_number=card_number,
+        )
+
+    except Card.DoesNotExist:
+
+        raise ValueError(
+            "Invalid card details."
+        )
+
+    if card.cvv != cvv:
+
+        raise ValueError(
+            "Invalid card details."
+        )
+
+    if card.expiry_date != expiry_date:
+
+        raise ValueError(
+            "Invalid card details."
+        )
+
+    if card.status != Card.ACTIVE:
+
+        raise ValueError(
+            "Card is blocked."
+        )
+
+    if amount > card.transaction_limit:
+
+        raise ValueError(
+            "Transaction exceeds card limit."
+        )
+
+    account = card.account
+
+    if account.balance < amount:
+
+        raise ValueError(
+            "Insufficient account balance."
+        )
+
+    with transaction.atomic():
+
+        account.balance -= amount
+
+        account.save(
+            update_fields=[
+                "balance",
+            ],
+        )
+
+        create_transaction(
+            account=account,
+            transaction_type=Transaction.CARD_PAYMENT,
+            amount=amount,
+            balance_after_transaction=account.balance,
+            remarks="Debit Card Transaction",
+        )
+
+    send_email_task.delay(
+        subject="Debit Card Transaction",
+        receiver_email=account.user.email,
+        body=(
+            f"Dear {account.user.username},\n\n"
+            f"Your debit card transaction of ${amount} "
+            f"was successful.\n\n"
+            f"Remaining Balance: ${account.balance}\n\n"
+            "Thank you for banking with us."
+        ),
+    )
+
+    return account

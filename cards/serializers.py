@@ -73,3 +73,30 @@ class UpdateTransactionLimitSerializer(
             "per card transaction."
         ),
     )
+    
+    
+    
+class CardTransactionSerializer(
+    serializers.Serializer,
+):
+
+    card_number = serializers.CharField(
+        max_length=16,
+        help_text="16-digit debit card number.",
+    )
+
+    cvv = serializers.CharField(
+        max_length=3,
+        help_text="3-digit CVV.",
+    )
+
+    expiry_date = serializers.DateField(
+        help_text="Card expiry date.",
+    )
+
+    amount = serializers.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        min_value=1,
+        help_text="Transaction amount.",
+    )
