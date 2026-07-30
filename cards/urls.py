@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import IssueCardView,ToggleCardStatusView,UpdateTransactionLimitView
+from .views import IssueCardView,ToggleCardStatusView,UpdateTransactionLimitView,CardTransactionView
 
 urlpatterns = [
 
@@ -20,5 +20,10 @@ urlpatterns = [
         UpdateTransactionLimitView.as_view(),
         name="update-transaction-limit",
     ),
+    path(
+    "Cardtransaction/",
+    CardTransactionView.as_view(),
+    name="card-transaction",
+),
 
 ]

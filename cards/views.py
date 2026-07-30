@@ -11,8 +11,8 @@ from drf_spectacular.utils import extend_schema
 from accounts.models import Account
 from .models import Card
 
-from .serializers import CardSerializer, IssueCardSerializer,UpdateTransactionLimitSerializer
-from .services import issue_card,toggle_card_status,update_transaction_limit
+from .serializers import CardSerializer, IssueCardSerializer,UpdateTransactionLimitSerializer,CardTransactionSerializer
+from .services import issue_card,toggle_card_status,update_transaction_limit,simulate_card_transaction
 
 
 
@@ -198,3 +198,72 @@ class UpdateTransactionLimitView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+        
+        
+        
+        
+class CardTransactionView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["Cards"],
+        summary="Simulate Debit Card Transaction",
+        description=(
+            "Simulates a debit card transaction after "
+            "validating card details, status, transaction "
+            "limit and account balance."
+        ),
+        request=CardTransactionSerializer,
+    )
+    def post(
+        self,
+        request,
+    ):
+
+        serializer = CardTransactionSerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        try:
+
+            account = simulate_card_transaction(
+                card_number=serializer.validated_data[
+                    "card_number"
+                ],
+                cvv=serializer.validated_data[
+                    "cvv"
+                ],
+                expiry_date=serializer.validated_data[
+                    "expiry_date"
+                ],
+                amount=serializer.validated_data[
+                    "amount"
+                ],
+            )
+
+        except ValueError as e:
+
+            return Response(
+                {
+                    "message": str(e),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+      {
+         "message": "Debit card transaction successful.",
+        "transaction_type": "CARD_PAYMENT",
+        "transaction_amount": serializer.validated_data[
+            "amount"
+        ],
+        "account_number": account.account_number,
+        "remaining_balance": account.balance,
+    },
+      status=status.HTTP_200_OK,
+)
