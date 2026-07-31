@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import User
+from .models import KYC
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -102,3 +103,32 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
         
 class LogoutSerializer(serializers.Serializer):
     pass
+
+
+
+
+
+
+
+
+class KYCSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = KYC
+
+        fields = [
+            "id",
+            "aadhaar_number",
+            "pan_number",
+            "address",
+            "status",
+            "submitted_at",
+            "verified_at",
+        ]
+
+        read_only_fields = [
+            "status",
+            "submitted_at",
+            "verified_at",
+        ]

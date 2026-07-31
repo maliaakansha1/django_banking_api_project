@@ -17,16 +17,29 @@ from .services import update_loan_status,list_loans
 from .services import foreclose_loan
 from .serializers import LoanForeclosureSerializer
 from .serializers import LoanHistorySerializer
+from customers.permissions import IsKYCVerified
 
 @extend_schema(
     tags=["Loans"],
 )
 class LoanApplicationView(APIView):
 
-    permission_classes = [
-        IsAuthenticated,
-    ]
+    # permission_classes = [
+    #     IsAuthenticated,IsKYCVerified
+    # ]
+    def get_permissions(self):
 
+        if self.request.method == "POST":
+            return [
+                IsAuthenticated(),
+                IsKYCVerified(),
+            ]
+
+        return [
+            IsAuthenticated(),
+        ]
+        
+        
     @extend_schema(
         summary="View My Loans",
         description="Returns all loans of the logged-in customer.",

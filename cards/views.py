@@ -1,5 +1,5 @@
 from django.shortcuts import render
-
+from accounts.permissions import IsAccountOwner
 # Create your views here.
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -13,12 +13,12 @@ from .models import Card
 
 from .serializers import CardSerializer, IssueCardSerializer,UpdateTransactionLimitSerializer,CardTransactionSerializer
 from .services import issue_card,toggle_card_status,update_transaction_limit,simulate_card_transaction
-
-
+from django.shortcuts import get_object_or_404
+from customers.permissions import IsKYCVerified
 
 class IssueCardView(APIView):
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsKYCVerified,IsAccountOwner]
 
     @extend_schema(
         tags=["Cards"],
@@ -82,7 +82,7 @@ class IssueCardView(APIView):
         
 class ToggleCardStatusView(APIView):
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsAccountOwner]
 
     @extend_schema(
         tags=["Cards"],
@@ -101,21 +101,15 @@ class ToggleCardStatusView(APIView):
         card_id,
     ):
 
-        try:
+        card = get_object_or_404(
+            Card,
+            id=card_id,
+        )
 
-            card = Card.objects.get(
-                id=card_id,
-                account__user=request.user,
-            )
-
-        except Card.DoesNotExist:
-
-            return Response(
-                {
-                    "message": "Card not found."
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        self.check_object_permissions(
+            request,
+            card,
+        )
 
         card = toggle_card_status(
             card=card,
@@ -136,7 +130,7 @@ class ToggleCardStatusView(APIView):
         
 class UpdateTransactionLimitView(APIView):
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsAccountOwner,IsKYCVerified]
 
     @extend_schema(
         tags=["Cards"],
@@ -166,21 +160,15 @@ class UpdateTransactionLimitView(APIView):
             raise_exception=True,
         )
 
-        try:
+        card = get_object_or_404(
+               Card,
+               id=card_id,
+)
 
-            card = Card.objects.get(
-                id=card_id,
-                account__user=request.user,
-            )
-
-        except Card.DoesNotExist:
-
-            return Response(
-                {
-                    "message": "Card not found."
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        self.check_object_permissions(
+           request,
+            card,
+)
 
         card = update_transaction_limit(
             card=card,
