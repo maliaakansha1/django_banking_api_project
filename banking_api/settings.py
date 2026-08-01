@@ -172,6 +172,14 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": (
             "utils.exception_handler.custom_exception_handler"
     ),
+    
+
+    "DEFAULT_THROTTLE_RATES": {
+        "login": "5/min",
+        "transfer": "10/min",
+        "deposit": "10/min",
+        "kyc": "3/min",
+    },
 }
 
 
