@@ -14,10 +14,13 @@ from rest_framework.generics import RetrieveAPIView
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from .models import StatementRequest
+from utils.responses import success_response, error_response
 
 from .serializers import (
     StatementStatusSerializer,
 )
+
+tags=["Statements"]
 
 @extend_schema(
     request=StatementRequestSerializer,
@@ -52,8 +55,8 @@ class StatementRequestView(APIView):
             statement_request.id
         )
 
-        return Response(
-            {
+        return success_response(
+            data={
                 "message": "Statement request submitted successfully.",
                 "request_id": statement_request.id,
                 "status": statement_request.status,
@@ -62,31 +65,44 @@ class StatementRequestView(APIView):
         )
         
         
-@extend_schema(
-    summary="Check Statement Status",
-    description=(
-        "Returns the current processing status of a statement request. "
-        "If completed, the response includes the download URL."
-    ),
-    responses=StatementStatusSerializer,
-)
 
-class StatementStatusView(
-    RetrieveAPIView
-):
 
-    serializer_class = (
-        StatementStatusSerializer
+class StatementStatusView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Check Statement Status",
+        description=(
+            "Returns the current processing status of a statement request. "
+            "If completed, the response includes the download URL."
+        ),
+        responses={
+            200: StatementStatusSerializer,
+        },
     )
+    def get(
+        self,
+        request,
+        id,
+    ):
 
-    lookup_field = "id"
+        statement = get_object_or_404(
+            StatementRequest,
+            id=id,
+            user=request.user,
+        )
 
-    def get_queryset(self):
+        serializer = StatementStatusSerializer(
+            statement,
+            context={
+               "request": request,
+    },
+        )
 
-        return (
-            StatementRequest.objects.filter(
-                user=self.request.user
-            )
+        return success_response(
+            data=serializer.data,
+            status=status.HTTP_200_OK,
         )
         
 class StatementDownloadView(APIView):
@@ -116,11 +132,8 @@ class StatementDownloadView(APIView):
 
         if not statement.statement_file:
 
-            return Response(
-                {
-                    "message":
-                    "Statement has not been generated yet."
-                },
+            return error_response(
+                error="Statement has not been generated yet.",
                 status=status.HTTP_404_NOT_FOUND,
             )
 

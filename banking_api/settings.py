@@ -169,6 +169,9 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.FormParser",
         "rest_framework.parsers.MultiPartParser",
     ),
+    "EXCEPTION_HANDLER": (
+            "utils.exception_handler.custom_exception_handler"
+    ),
 }
 
 

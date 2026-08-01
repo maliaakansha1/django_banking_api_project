@@ -18,6 +18,7 @@ from .services import foreclose_loan
 from .serializers import LoanForeclosureSerializer
 from .serializers import LoanHistorySerializer
 from customers.permissions import IsKYCVerified
+from utils.responses import success_response, error_response
 
 @extend_schema(
     tags=["Loans"],
@@ -59,8 +60,9 @@ class LoanApplicationView(APIView):
             many=True,
         )
 
-        return Response(
-            serializer.data,
+        return success_response(
+            data=serializer.data,
+            status=status.HTTP_200_OK,
         )
 
     @extend_schema(
@@ -92,8 +94,11 @@ class LoanApplicationView(APIView):
             tenure_months=serializer.validated_data["tenure_months"],
         )
 
-        return Response(
-            LoanApplicationSerializer(loan).data,
+        return success_response(
+            data={
+                "message": "Loan application submitted successfully.",
+                "loan": LoanApplicationSerializer(loan).data,
+            },
             status=status.HTTP_201_CREATED,
         )
         
@@ -164,11 +169,9 @@ class LoanApprovalView(APIView):
             Loan.APPROVED,
             Loan.REJECTED,
         ]:
-            return Response(
-                {
-                    "error": "Invalid status."
-                },
-                status=400,
+            return error_response(
+                error="Invalid status.",
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
@@ -180,15 +183,13 @@ class LoanApprovalView(APIView):
 
         except ValueError as e:
 
-            return Response(
-                {
-                    "error": str(e)
-                },
-                status=400,
+            return error_response(
+                error=str(e),
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return Response(
-            LoanApplicationSerializer(loan).data
+        return success_response(
+            data=LoanApplicationSerializer(loan).data
         )
 
 
@@ -229,22 +230,19 @@ class LoanForeclosureView(APIView):
                 loan=loan,
             )
 
-            return Response(
-                {
-                    "message": "Loan foreclosed successfully."
-                },
+            return success_response(
+                data={"message": "Loan foreclosed successfully."},
                 status=status.HTTP_200_OK,
             )
 
         except ValueError as e:
 
-            return Response(
-                {
-                    "error": str(e),
-                },
+            return error_response(
+                error=str(e),
                 status=status.HTTP_400_BAD_REQUEST,
             )
             
+                 
             
             
             
@@ -274,10 +272,8 @@ class LoanHistoryView(APIView):
 
         except Loan.DoesNotExist:
 
-            return Response(
-                {
-                    "message": "Loan not found."
-                },
+            return error_response(
+                error="Loan not found.",
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -285,7 +281,7 @@ class LoanHistoryView(APIView):
             loan
         )
 
-        return Response(
-            serializer.data,
+        return success_response(
+            data=serializer.data,
             status=status.HTTP_200_OK,
         )

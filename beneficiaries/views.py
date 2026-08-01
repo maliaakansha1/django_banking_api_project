@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from .serializers import BeneficiarySerializer,BeneficiaryListSerializer
 from drf_spectacular.utils import extend_schema
 from .services import add_beneficiary,list_beneficiaries,delete_beneficiary
-
+from utils.responses import success_response, error_response
 
 class BeneficiaryListCreateView(APIView):
     @extend_schema(
@@ -34,15 +34,13 @@ class BeneficiaryListCreateView(APIView):
             )
 
         except ValueError as e:
-            return Response(
-                {
-                    "message": str(e),
-                },
+            return error_response(
+                error=str(e),
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return Response(
-            {
+        return success_response(
+            data={
                 "message": "Beneficiary added successfully.",
                 "beneficiary_account": (
                     beneficiary.beneficiary_account.account_number
@@ -61,11 +59,11 @@ class BeneficiaryListCreateView(APIView):
                  many=True,
     )
 
-        return Response(
-              serializer.data,
-              status=status.HTTP_200_OK,
-    )
-        
+        return success_response(
+            data=serializer.data,
+            status=status.HTTP_200_OK,
+        )
+
 class BeneficiaryDeleteView(APIView):
 
     def delete(self, request, beneficiary_id):
@@ -75,8 +73,8 @@ class BeneficiaryDeleteView(APIView):
             beneficiary_id=beneficiary_id,
         )
 
-        return Response(
-            {
+        return success_response(
+            data={
                 "message": "Beneficiary deleted successfully."
             },
             status=status.HTTP_200_OK,
