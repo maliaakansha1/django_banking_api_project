@@ -186,29 +186,52 @@ def transfer_money(
                 "Receiver account not found."
             )
         
-        beneficiary = (
-                Beneficiary.objects
-                .filter(
-                      user=user,
-                      beneficiary_account=receiver_account,
-    )
-                .first()
-)
+#         beneficiary = (
+#                 Beneficiary.objects
+#                 .filter(
+#                       user=user,
+#                       beneficiary_account=receiver_account,
+#     )
+#                 .first()
+# )
 
-        if beneficiary is None:
-           raise ValueError(
-             "Receiver account is not added as a beneficiary."
+#         if beneficiary is None:
+#            raise ValueError(
+#              "Receiver account is not added as a beneficiary."
+#     )
+
+#         beneficiary = activate_beneficiary_if_ready(
+#               beneficiary
+# )
+
+#         if beneficiary.status != Beneficiary.ACTIVE:
+#              raise ValueError(
+#                  "Beneficiary is in cooling period. Please try again later."
+#     )
+        if receiver_account.user != user:
+
+           beneficiary = (
+                  Beneficiary.objects
+                  .filter(
+            user=user,
+            beneficiary_account=receiver_account,
+        )
+        .first()
     )
 
-        beneficiary = activate_beneficiary_if_ready(
-              beneficiary
-)
+           if beneficiary is None:
+              raise ValueError(
+            "Receiver account is not added as a beneficiary."
+        )
 
-        if beneficiary.status != Beneficiary.ACTIVE:
-             raise ValueError(
-                 "Beneficiary is in cooling period. Please try again later."
+           beneficiary = activate_beneficiary_if_ready(
+                 beneficiary
     )
-        
+
+           if beneficiary.status != Beneficiary.ACTIVE:
+              raise ValueError(
+            "Beneficiary is in cooling period. Please try again later."
+        )
 
         if sender_account.balance < amount:
             raise ValueError(
