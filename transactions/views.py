@@ -24,6 +24,7 @@ from drf_spectacular.utils import (
     OpenApiTypes,
     extend_schema,
 )
+from utils.responses import success_response, error_response
 
 class DepositView(APIView):
 
@@ -67,15 +68,13 @@ class DepositView(APIView):
             )
 
         except ValueError as e:
-            return Response(
-                {
-                    "message": str(e)
-                },
+            return error_response(
+                error=str(e),
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return Response(
-            {
+        return success_response(
+            data={
                 "message": "Deposit successful.",
                 "account_number": account.account_number,
                 "account_type": account.account_type,
@@ -128,15 +127,13 @@ class WithdrawalView(APIView):
 
         except ValueError as e:
 
-            return Response(
-                {
-                    "message": str(e)
-                },
+            return error_response(
+                error=str(e),
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return Response(
-            {
+        return success_response(
+            data={
                 "message": "Withdrawal successful.",
                 "account_number": account.account_number,
                 "account_type": account.account_type,
@@ -198,18 +195,16 @@ class TransferView(APIView):
 
         except ValueError as e:
 
-            return Response(
-                {
-                    "message": str(e)
-                },
+            return error_response(
+                error=str(e),
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         sender = result["sender"]
         receiver = result["receiver"]
 
-        return Response(
-            {
+        return success_response(
+            data={
                 "message": "Transfer successful.",
                 "from_account": sender.account_number,
                 "to_account": receiver.account_number,
@@ -309,6 +304,7 @@ from .services import list_transactions
 )
 
 class TransactionHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
 
@@ -336,4 +332,10 @@ class TransactionHistoryView(APIView):
             many=True,
         )
 
-        return Response(serializer.data)
+        return success_response(data=
+                                {
+                                    "message": "Transaction history retrieved successfully.",
+                                    "transactions": serializer.data
+                                },
+                                status=status.HTTP_200_OK
+                                )

@@ -19,6 +19,7 @@ from .services import submit_kyc
 from django.shortcuts import get_object_or_404
 from .models import KYC
 from .services import verify_kyc, reject_kyc
+from utils.responses import success_response, error_response
 
 @extend_schema(
     auth=[],
@@ -32,12 +33,12 @@ class RegisterView(APIView):
 
         if serializer.is_valid():
             serializer.save()
-            return Response(
-                {"message": "User registered successfully"},
+            return success_response(
+                data={"message": "User registered successfully"},
                 status=status.HTTP_201_CREATED,
             )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return error_response(error=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -66,15 +67,18 @@ class LoginView(APIView):
         )
 
         if not user:
-            return Response(
-                {"message": "Invalid Credentials"},
+            return error_response(
+                error={"message": "Invalid Credentials"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
         token = generate_token(user)
         store_token(user, token)
 
-        return Response({"token": token}, status=status.HTTP_200_OK)
+        return success_response(
+            data={"token": token},
+            status=status.HTTP_200_OK
+        )
 
 
 class ProfileView(APIView):
@@ -89,8 +93,8 @@ class ProfileView(APIView):
 
         serializer = ProfileSerializer(request.user)
 
-        return Response(
-            serializer.data,
+        return success_response(
+            data=serializer.data,
             status=status.HTTP_200_OK,
         )
     @extend_schema(
@@ -109,13 +113,13 @@ class ProfileView(APIView):
 
             serializer.save()
 
-            return Response(
-                ProfileSerializer(request.user).data,
+            return success_response(
+                data=ProfileSerializer(request.user).data,
                 status=status.HTTP_200_OK,
             )
 
-        return Response(
-            serializer.errors,
+        return error_response(
+            error=serializer.errors,
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -135,7 +139,10 @@ class LogoutView(APIView):
 
     def post(self, request):
         remove_token(request.user)
-        return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+        return success_response(
+            data={"message": "Logout successful"},
+            status=status.HTTP_200_OK
+        )
 
 
 
@@ -188,15 +195,15 @@ class SubmitKYCView(APIView):
 
         except ValueError as e:
 
-            return Response(
-                {
+            return error_response(
+                error={
                     "message": str(e)
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return Response(
-            {
+        return success_response(
+            data={
                 "message": "KYC submitted successfully.",
                 "kyc": KYCSerializer(kyc).data,
             },
@@ -232,11 +239,8 @@ class VerifyKYCView(APIView):
 
         if not request.user.is_staff:
 
-            return Response(
-                {
-                    "message":
-                    "Only admin can verify KYC."
-                },
+            return error_response(
+                error="Only admin can verify KYC.",
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -250,8 +254,8 @@ class VerifyKYCView(APIView):
             admin_user=request.user,
         )
 
-        return Response(
-            {
+        return success_response(
+            data={
                 "message":
                 "KYC verified successfully.",
                 "kyc":
@@ -288,11 +292,8 @@ class RejectKYCView(APIView):
 
         if not request.user.is_staff:
 
-            return Response(
-                {
-                    "message":
-                    "Only admin can reject KYC."
-                },
+            return error_response(
+                error="Only admin can reject KYC.",
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -305,8 +306,8 @@ class RejectKYCView(APIView):
             kyc=kyc,
         )
 
-        return Response(
-            {
+        return success_response(
+            data={
                 "message":
                 "KYC rejected successfully.",
                 "kyc":

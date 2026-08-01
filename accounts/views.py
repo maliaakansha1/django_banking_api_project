@@ -11,7 +11,7 @@ from .models import Account
 from .serializers import AccountSerializer
 
 from .serializers import AccountSerializer
-
+from utils.responses import success_response, error_response
 
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -63,13 +63,16 @@ class CreateAccountView(APIView):
 
             account = serializer.save()
 
-            return Response(
-                AccountSerializer(account).data,
+            return success_response(
+                data={
+                    "message": "Account created successfully.",
+                    "account": AccountSerializer(account).data
+                },
                 status=status.HTTP_201_CREATED,
             )
 
-        return Response(
-            serializer.errors,
+        return error_response(
+            error=serializer.errors,
             status=status.HTTP_400_BAD_REQUEST,
         )
         

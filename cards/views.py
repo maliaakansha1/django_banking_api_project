@@ -15,6 +15,7 @@ from .serializers import CardSerializer, IssueCardSerializer,UpdateTransactionLi
 from .services import issue_card,toggle_card_status,update_transaction_limit,simulate_card_transaction
 from django.shortcuts import get_object_or_404
 from customers.permissions import IsKYCVerified
+from utils.responses import success_response, error_response
 
 class IssueCardView(APIView):
 
@@ -52,10 +53,8 @@ class IssueCardView(APIView):
 
         except Account.DoesNotExist:
 
-            return Response(
-                {
-                    "message": "Account not found."
-                },
+            return error_response(
+                error="Account not found.",
                 status=status.HTTP_404_NOT_FOUND,
             )
         try:
@@ -65,17 +64,18 @@ class IssueCardView(APIView):
         )
         except ValueError as e:
 
-            return Response(
-                {
-                    "message": str(e)
-                },
+            return error_response(
+                error=str(e),
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return Response(
-            CardSerializer(card).data,
+        return success_response(
+            data={
+             "message": "Debit card issued successfully.",
+             "card": CardSerializer(card).data,
+    },
             status=status.HTTP_201_CREATED,
-        )
+)
         
         
         
@@ -115,8 +115,8 @@ class ToggleCardStatusView(APIView):
             card=card,
         )
 
-        return Response(
-            {
+        return success_response(
+            data={
                 "message": (
                     "Card status updated successfully."
                 ),
@@ -177,8 +177,8 @@ class UpdateTransactionLimitView(APIView):
             ],
         )
 
-        return Response(
-            {
+        return success_response(
+            data={
                 "message": (
                     "Transaction limit updated successfully."
                 ),
@@ -236,22 +236,21 @@ class CardTransactionView(APIView):
 
         except ValueError as e:
 
-            return Response(
-                {
-                    "message": str(e),
-                },
+            return error_response(
+                error=str(e),
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return Response(
-      {
-         "message": "Debit card transaction successful.",
-        "transaction_type": "CARD_PAYMENT",
-        "transaction_amount": serializer.validated_data[
-            "amount"
-        ],
-        "account_number": account.account_number,
-        "remaining_balance": account.balance,
-    },
-      status=status.HTTP_200_OK,
-)
+        return success_response(
+            data={
+                "message": "Debit card transaction successful.",
+                "transaction_type": "CARD_PAYMENT",
+                "transaction_amount": serializer.validated_data[
+                    "amount"
+                ],
+                "account_number": account.account_number,
+                "remaining_balance": account.balance,
+            },
+            status=status.HTTP_200_OK,
+        )
+     
