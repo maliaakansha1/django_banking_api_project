@@ -21,6 +21,9 @@ from .models import KYC
 from .services import verify_kyc, reject_kyc
 from utils.responses import success_response, error_response
 
+from utils.throttles import LoginRateThrottle,KYCRateThrottle
+
+
 @extend_schema(
     auth=[],
     request=RegisterSerializer,
@@ -56,6 +59,7 @@ class RegisterView(APIView):
 )
 
 class LoginView(APIView):
+    throttle_classes = [LoginRateThrottle]
     serializer_class = LoginSerializer
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -151,8 +155,10 @@ class LogoutView(APIView):
 )
 
 class SubmitKYCView(APIView):
-
+    throttle_classes = [KYCRateThrottle]
     permission_classes = [IsAuthenticated]
+    
+    
     @extend_schema(
     summary="Submit KYC",
     description=(

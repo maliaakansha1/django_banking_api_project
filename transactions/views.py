@@ -25,9 +25,9 @@ from drf_spectacular.utils import (
     extend_schema,
 )
 from utils.responses import success_response, error_response
-
+from utils.throttles import DepositRateThrottle,TransferRateThrottle
 class DepositView(APIView):
-
+    throttle_classes = [DepositRateThrottle]
     permission_classes = [IsAuthenticated]
     @extend_schema(
         tags=["Transaction Management"],
@@ -146,6 +146,7 @@ class WithdrawalView(APIView):
 class TransferView(APIView):
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = [TransferRateThrottle]
 
     @extend_schema(
     tags=["Transaction Management"],
