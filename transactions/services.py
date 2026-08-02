@@ -13,6 +13,7 @@ from .models import Transaction
 from notifications.tasks import (
     send_email_task,
 )
+from django.core.cache import cache
 
 
 def deposit_money(
@@ -52,6 +53,9 @@ def deposit_money(
         account.save(
             update_fields=["balance"],
         )
+        cache.delete(
+              f"accounts_{user.id}"
+)
 
         create_transaction(
             account=account,
@@ -116,6 +120,9 @@ def withdraw_money(
         account.save(
             update_fields=["balance"]
         )
+        cache.delete(
+            f"accounts_{user.id}"
+)
         create_transaction(
               account=account,
               transaction_type=Transaction.WITHDRAW,
@@ -248,6 +255,13 @@ def transfer_money(
         receiver_account.save(
             update_fields=["balance"]
         )
+        cache.delete(
+           f"accounts_{sender_account.user.id}"
+)
+
+        cache.delete(
+             f"accounts_{receiver_account.user.id}"
+)
         create_transaction(
                account=sender_account,
                transaction_type=Transaction.TRANSFER_OUT,

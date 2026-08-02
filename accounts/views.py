@@ -12,6 +12,7 @@ from .serializers import AccountSerializer
 
 from .serializers import AccountSerializer
 from utils.responses import success_response, error_response
+from django.core.cache import cache
 
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -62,6 +63,9 @@ class CreateAccountView(APIView):
         if serializer.is_valid():
 
             account = serializer.save()
+            cache.delete(
+               f"accounts_{request.user.id}"
+)
 
             return success_response(
                 data={
@@ -113,3 +117,33 @@ class AccountListView(ListAPIView):
             )
 
         return queryset
+    
+    def list(self, request, *args, **kwargs):
+
+        cache_key = f"accounts_{request.user.id}"
+
+        cached_data = cache.get(cache_key)
+
+        if cached_data:
+            return success_response(
+                data=cached_data,
+                status=status.HTTP_200_OK,
+            )
+
+        queryset = self.get_queryset()
+
+        serializer = self.get_serializer(
+            queryset,
+            many=True,
+        )
+
+        cache.set(
+            cache_key,
+            serializer.data,
+            timeout=300,
+        )
+
+        return success_response(
+            data=serializer.data,
+            status=status.HTTP_200_OK,
+        )
