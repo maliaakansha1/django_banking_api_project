@@ -26,6 +26,12 @@ from drf_spectacular.utils import (
 )
 from utils.responses import success_response, error_response
 from utils.throttles import DepositRateThrottle,TransferRateThrottle
+
+from utils.idempotency import acquire_idempotency_key
+
+
+
+
 class DepositView(APIView):
     throttle_classes = [DepositRateThrottle]
     permission_classes = [IsAuthenticated]
@@ -39,6 +45,15 @@ class DepositView(APIView):
         "- Transaction history is created.\n"
         "- An email notification is sent asynchronously using Celery."
     ),
+        parameters=[
+        OpenApiParameter(
+            name="Idempotency-Key",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            required=True,
+            description="Unique key to prevent duplicate requests.",
+        ),
+    ],
         request=DepositSerializer,
         responses={
            200: {
@@ -53,6 +68,23 @@ class DepositView(APIView):
     },
 )
     def post(self, request):
+        idempotency_key = request.headers.get("Idempotency-Key")
+
+        if not idempotency_key:
+
+            return error_response(
+              error="Idempotency-Key header is required.",
+              status=status.HTTP_400_BAD_REQUEST,
+    )
+
+        is_new_request = acquire_idempotency_key( idempotency_key)
+
+        if not is_new_request:
+
+          return error_response(
+             error="This request has already been processed.",
+             status=status.HTTP_409_CONFLICT,
+    )
 
         serializer = DepositSerializer(
             data=request.data
@@ -90,20 +122,46 @@ class WithdrawalView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-    tags=["Transactions"],
-    summary="Withdraw Money",
-    description=(
+     tags=["Transaction Management"],
+     summary="Withdraw Money",
+     description=(
         "Withdraws money from the authenticated user's account. "
         "After a successful withdrawal, an email notification is "
         "sent asynchronously using Celery."
     ),
-    request=WithdrawalSerializer,
-    responses={
+     parameters=[
+        OpenApiParameter(
+            name="Idempotency-Key",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            required=True,
+            description="Unique key to prevent duplicate requests.",
+        ),
+    ],
+     request=WithdrawalSerializer,
+     responses={
         200: OpenApiResponse(description="Withdrawal successful."),
         400: OpenApiResponse(description="Invalid request."),
     },
 )
     def post(self, request):
+        idempotency_key = request.headers.get("Idempotency-Key")
+
+        if not idempotency_key:
+
+          return error_response(
+            error="Idempotency-Key header is required.",
+            status=status.HTTP_400_BAD_REQUEST,
+    )
+
+        is_new_request = acquire_idempotency_key(idempotency_key)
+
+        if not is_new_request:
+
+           return error_response(
+             error="This request has already been processed.",
+            status=status.HTTP_409_CONFLICT,
+    )
 
         serializer = WithdrawalSerializer(
             data=request.data
@@ -149,9 +207,9 @@ class TransferView(APIView):
     throttle_classes = [TransferRateThrottle]
 
     @extend_schema(
-    tags=["Transaction Management"],
-    summary="Transfer Money",
-    description=(
+     tags=["Transaction Management"],
+     summary="Transfer Money",
+     description=(
         "Transfers funds between two bank accounts.\n\n"
         "After a successful transfer:\n"
         "- Sender balance is updated.\n"
@@ -159,8 +217,17 @@ class TransferView(APIView):
         "- Transaction records are created.\n"
         "- Email notifications are sent asynchronously using Celery."
     ),
-    request=TransferSerializer,
-    responses={
+     parameters=[
+        OpenApiParameter(
+            name="Idempotency-Key",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            required=True,
+            description="Unique key to prevent duplicate requests.",
+        ),
+    ],
+     request=TransferSerializer,
+     responses={
         200: OpenApiResponse(
             description="Transfer completed successfully."
         ),
@@ -170,6 +237,22 @@ class TransferView(APIView):
     },
 )
     def post(self, request):
+        idempotency_key = request.headers.get("Idempotency-Key")
+
+        if not idempotency_key:
+
+           return error_response(
+             error="Idempotency-Key header is required.",
+             status=status.HTTP_400_BAD_REQUEST,
+        )
+
+        is_new_request= acquire_idempotency_key(idempotency_key)
+        if not is_new_request:
+            return error_response(
+                error="Duplicate request. This operation has already been processed.",
+                status=status.HTTP_409_CONFLICT,
+            )
+            
 
         serializer = TransferSerializer(
             data=request.data
